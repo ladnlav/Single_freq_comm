@@ -150,7 +150,7 @@ ber.release();
 ber2.release();
 tend = toc(tStart);
 fprintf('Simulation finished after %.2f s\n', tend);
-
+%%
 %
 figure();
 semilogy(snr, mean(errStatsNoCoding(:, :, 1), 2), 'LineWidth', 2)
@@ -195,9 +195,9 @@ Gain_max=max(Gain);
 disp(Gain_max);
 
 figure();
-plot(snr(M_code~=0), Gain, 'LineWidth', 2);
+plot(Eb_N0(M_code~=0), Gain, 'LineWidth', 2);
 
-xlabel('SNR, dB');
+xlabel('Eb/N0, dB');
 ylabel('GAIN, dB')
 grid on
 set(gca, 'Fontsize', 20)
@@ -219,10 +219,10 @@ title('Сравнение результатов работы точного и 
 
 % Time comparison
 figure();
-plot(snr, t_exact', 'LineWidth', 2);
+plot(Eb_N0, t_exact', 'LineWidth', 2);
 hold on;
-plot(snr,t_app', '--', 'LineWidth', 2);
-xlabel('SNR, dB');
+plot(Eb_N0,t_app', '--', 'LineWidth', 2);
+xlabel('Eb/N0, dB');
 ylabel('Time, sec')
 grid on
 set(gca, 'Fontsize', 20)
@@ -305,17 +305,23 @@ maxnumiter = 10;
 snr2 = 6:0.2:14;
 numframes = 10000;
 
+
 errStats_minsum = zeros(length(snr2), numframes, 3);
 errStats_bp = zeros(length(snr2), numframes, 3);
 
 ber = comm.ErrorRate;
 ber2 = comm.ErrorRate;
 
-MinSumScalingFactor = 0.9; % task: find the best parameter 
+MinSumScalingFactor_array=0.1:0.1:1;
+%MinSumScalingFactor = 0.75; % task: find the best parameter 
 t_min_sum = zeros(length(snr2), 1);
 t_bp = zeros(length(snr2), 1);
+errStats_minsum_array=zeros(numel(MinSumScalingFactor_array),length(snr2), numframes, 3);
 
 tStart = tic;
+
+for jj=1:numel(MinSumScalingFactor_array)
+MinSumScalingFactor = MinSumScalingFactor_array(jj);
 for ii = 1:length(snr2)
     t_min_sum_i = 0;
     t_bp_i = 0;
@@ -361,18 +367,38 @@ for ii = 1:length(snr2)
     reset(ber);
     reset(ber2);
 end
+
+errStats_minsum_array(jj,:,:,:)=errStats_minsum;
+end
 t = toc(tStart);
 fprintf('Simulation finished after %.2f s\n', t);
+%% MinSum algorithm with different MinSumScalingFactor
+figure();
+Eb_N02=Eb_N0_convert(snr2,Constellation);
+legendLabels = cell(1, numel(MinSumScalingFactor_array));
 
+for i=1:numel(MinSumScalingFactor_array)
+    
+    semilogy(Eb_N02, mean(errStats_minsum_array(i,:, :, 1), 3),'LineWidth', 2)
+    hold on
+    legendLabels{i}=['MinSumScalingFactor = ' num2str(MinSumScalingFactor_array(i))];
+end
+
+legend(legendLabels,'Location','southwest')
+xlabel('E_b/N_0, dB')
+ylabel('BER')
+grid on
+set(gca, 'FontSize', 20)
+title('MinSum алгоритм с разными MinSumScalingFactor')
 %%
-
-semilogy(snr2, mean(errStats_minsum(:, :, 1), 2))
+Eb_N02=Eb_N0_convert(snr2,Constellation);
+semilogy(Eb_N02, mean(errStats_minsum(:, :, 1), 2))
 hold on
-semilogy(snr2, mean(errStats_bp(:, :, 1), 2), '--')
+semilogy(Eb_N02, mean(errStats_bp(:, :, 1), 2), '--')
 hold off
 
 legend('MinSum', 'Belief Propagation','Location','southwest')
-xlabel('SNR, dB')
+xlabel('E_b/N_0, dB')
 ylabel('BER')
 grid on
 set(gca, 'FontSize', 20)
@@ -383,10 +409,10 @@ save('BER_SNR_results.mat', 'errStats_minsum', 'errStats_bp', '-append')
 % compare the speed of Belief Propagation and MinSum decoders
 
 figure();
-plot(snr2, t_min_sum', 'LineWidth', 2);
+plot(Eb_N02, t_min_sum', 'LineWidth', 2);
 hold on;
-plot(snr2,t_bp', '--', 'LineWidth', 2);
-xlabel('SNR, dB');
+plot(Eb_N02,t_bp', '--', 'LineWidth', 2);
+xlabel('E_b/N_0, dB');
 ylabel('Time, sec')
 grid on
 set(gca, 'Fontsize', 20)
