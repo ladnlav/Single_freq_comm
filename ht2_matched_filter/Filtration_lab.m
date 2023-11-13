@@ -47,7 +47,30 @@
     %> @todo прописать функцию
     sqimpuls = sqRCcoeff (span, nsamp, rolloff);
     %> @todo построить импульсную и частотную характеристику фильтра
-    % .........
+    % Импульсная характеристика
+    pulse = conv(sqimpuls, sqimpuls);
+    
+    % Generate frequency response using FFT
+    frequency_response = abs(fftshift(fft(pulse)));
+    
+    % Plot the pulse response
+    figure;
+    subplot(2,1,1);
+    plot(pulse);
+    title('Root Raised Cosine Pulse Response');
+    xlabel('Sample Index');
+    ylabel('Amplitude');
+    
+    % Plot the frequency response
+    subplot(2,1,2);
+    f = linspace(-0.5, 0.5, length(frequency_response));
+    plot(f, frequency_response);
+    title('Frequency Response');
+    xlabel('Normalized Frequency');
+    ylabel('Magnitude');
+    
+    % Set plot limits
+    xlim([-0.5, 0.5]);
 % =========================================================================
 %> Проверка 1.
 %> Сравнение со стандартной функцией
