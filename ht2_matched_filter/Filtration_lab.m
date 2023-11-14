@@ -47,13 +47,12 @@
     %> @todo прописать функцию
     sqimpuls = sqRCcoeff (span, nsamp, rolloff);
     %> @todo построить импульсную и частотную характеристику фильтра
+
     % Импульсная характеристика
     pulse = conv(sqimpuls, sqimpuls);
-    
-    % Generate frequency response using FFT
+    % Частотная характеристика фильтра
     frequency_response = abs(fftshift(fft(pulse)));
     
-    % Plot the pulse response
     figure;
     subplot(2,1,1);
     plot(pulse);
@@ -61,15 +60,12 @@
     xlabel('Sample Index');
     ylabel('Amplitude');
     
-    % Plot the frequency response
     subplot(2,1,2);
     f = linspace(-0.5, 0.5, length(frequency_response));
     plot(f, frequency_response);
     title('Frequency Response');
     xlabel('Normalized Frequency');
     ylabel('Magnitude');
-    
-    % Set plot limits
     xlim([-0.5, 0.5]);
 % =========================================================================
 %> Проверка 1.
@@ -104,7 +100,26 @@ end
     %> @todo прописать функцию
     impuls = RCcoeff (span, nsamp, rolloff);
     %> @todo построить импульсную и частотную характеристику фильтра
-    % .........
+
+    % Импульсная характеристика
+    pulse2 = conv(impuls, impuls);
+    % Частотная характеристика фильтра
+    frequency_response2 = abs(fftshift(fft(pulse2)));
+    
+    figure;
+    subplot(2,1,1);
+    plot(pulse2);
+    title('Raised Cosine Pulse Response');
+    xlabel('Sample Index');
+    ylabel('Amplitude');
+    
+    subplot(2,1,2);
+    f = linspace(-0.5, 0.5, length(frequency_response2));
+    plot(f, frequency_response2);
+    title('Frequency Response');
+    xlabel('Normalized Frequency');
+    ylabel('Magnitude');
+    xlim([-0.5, 0.5]);
     
 % =========================================================================
 %> Проверка 2.
@@ -131,7 +146,7 @@ end
 % =========================================================================
     UpSempFlag = true(1);
     bits = randi([0 1], 1, 1000); % генерация бит
-    sign = mapping (bits, 2);       %QPSK 500 символов 
+    [sign,~] = mapping (bits, 'QPSK');       %QPSK 500 символов 
     filtsign = filtration(sign, sqimpuls, nsamp, UpSempFlag);
     % =====================================================================
     %> Проверка 3.1
@@ -146,6 +161,24 @@ end
         err = 'Ошибка в задаче 3.1. Проверьте фильтр'
         ans = sum(abs(check3-filtsign))
     end
+
+    % График сигнального созвездия
+    figure;
+    scatter(real(filtsign), imag(filtsign), 'o');
+    title('Сигнальное созвездие с передискретизацией');
+    xlabel('In-Phase (I)');
+    ylabel('Quadrature (Q)');
+    grid on;
+    
+    % Амплитуда сигнала от времени
+    figure;
+    time = (0:length(filtsign)-1);
+    plot(time, abs(filtsign));
+    title('Амплитуда передискретизированного сигнала');
+    xlabel('Время');
+    ylabel('Амплитуда');
+    grid on;
+
     % =====================================================================
     %> Проверка 3.2
     %> Проверяем корректность работы ф-ии без передескретизации со станднартной функцией.
@@ -165,3 +198,95 @@ end
         err = 'Ошибка в задаче 3.2. Проверьте фильтр'
         ans = sum(abs(chack4-filtsign2))
     end
+
+     % График сигнального созвездия
+    figure;
+    scatter(real(filtsign2), imag(filtsign2), 'o');
+    title('Сигнальное созвездие без передискретизации');
+    xlabel('In-Phase (I)');
+    ylabel('Quadrature (Q)');
+    grid on;
+    
+    % Амплитуда сигнала от времени
+    figure;
+    time = (0:length(filtsign2)-1);
+    plot(time, abs(filtsign2));
+    title('Амплитуда сигнала без передискретизации');
+    xlabel('Время');
+    ylabel('Амплитуда');
+    grid on;
+
+
+    %% point 5.1: screenshot model
+    UpSempFlag = true(1);
+    message = bits;
+    [IQ,~] = mapping(message, 'QPSK');       %QPSK 500 символов 
+    IQ_filt = filtration(IQ, sqimpuls, nsamp, UpSempFlag);
+
+    IQ_filt_noise=Noise(5,IQ_filt);
+
+    IQ_filt2 = filtration(IQ_filt_noise, sqimpuls, nsamp, UpSempFlag);
+    
+    IQ_downsampled=downsample(IQ_filt2, nsamp);
+
+    figure;
+    scatter(real(IQ_filt2), imag(IQ_filt2), 'o');
+    title('Сигнальное созвездие на приёмнике после добавления AWGN');
+    xlabel('In-Phase (I)');
+    ylabel('Quadrature (Q)');
+    grid on;
+    
+    figure;
+    time = (0:length(IQ_filt2)-1);
+    plot(time, abs(IQ_filt2));
+    title('Амплитуда сигнала на приёмнике после добавления AWGN');
+    xlabel('Время');
+    ylabel('Амплитуда');
+    grid on;
+
+    figure; 
+    scatter(real(IQ_downsampled), imag(IQ_downsampled), 'o');
+    title('Сигнальное созвездие на приёмнике после передискретизации к исходной частоте дискретизации');
+    xlabel('In-Phase (I)');
+    ylabel('Quadrature (Q)');
+    grid on;
+    
+    figure;
+    time = (0:length(IQ_downsampled)-1);
+    plot(time, abs(IQ_downsampled));
+    title('Амплитуда сигнала на приёмнике после передискретизации к исходной частоте дискретизации');
+    xlabel('Время');
+    ylabel('Амплитуда');
+    grid on;
+    
+    %% point 5.2 MER(freq_offset)
+    SNR=30; % in dB
+    freqOffsetPercentage = -2:0.01:2;
+    MER_values = zeros(size(freqOffsetPercentage));
+
+    % Цикл по разным значениям частотного сдвига
+    for i = 1:length(freqOffsetPercentage)
+        
+        % Добавить шум с заданным SNR
+        IQ_filt_noise=Noise(SNR,IQ_filt);
+
+        % Добавить частотный сдвиг
+        frequencyOffset = freqOffsetPercentage(i);
+        RX_IQ_offset = IQ_filt_noise .* exp(1i * 2 * pi * frequencyOffset * (0:length(IQ_filt_noise)-1));
+        
+        % Согласованная фильтрация на приёмнике
+        IQ_filt3 = filtration(RX_IQ_offset, sqimpuls, nsamp, 0);
+        
+        % Downsampling на приёмнике
+        IQ_filt3_downsampled=downsample(IQ_filt3, nsamp);
+
+        % MER для текущего частотного сдвига 
+        MER_values(i) = MER_my_func(IQ_filt3_downsampled, 'QPSK');
+    end
+
+    figure;
+    plot(freqOffsetPercentage, MER_values, 'o-');
+    title('MER Characteristic vs. Frequency Offset');
+    xlabel('Frequency Offset (% of Signal Band)');
+    ylabel('MER (dB)');
+    grid on;

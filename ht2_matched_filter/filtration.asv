@@ -1,0 +1,25 @@
+% Фильтрация
+%> @file Filtration.m
+% =========================================================================
+%> @brief Фильтрация
+%> @param sign входной сигнал
+%> @param coeff коэффиценты фильтра
+%> @param nsamp число выборок на символ
+%> @param UpSampFlag [1] -  фильтр с передискретизацией,[0] - фильтр без передискретизации 
+%> @return filtsign отфильтрованный сигнал 
+% =========================================================================
+function filtsign = filtration(sign, coeff, nsamp, UpSampFlag)
+    %> @todo место для вашего кода
+
+    if UpSampFlag
+        % Upsample the input signal
+        upsampledSign = upsample(sign, nsamp);
+
+        % Apply raised cosine filtering
+        filtsign = conv(upsampledSign, coeff, 'same');
+    else
+        % Apply raised cosine filtering without oversampling
+        filtsign = conv(sign, coeff, 'same');
+    end
+
+end 

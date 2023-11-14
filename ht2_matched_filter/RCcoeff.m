@@ -12,5 +12,24 @@
 % =========================================================================
 function coeff = RCcoeff (span, nsamp, rolloff)
     %> @todo Место для вашего кода
-    
+    T=1;
+    % Вектор времени    
+    t1 = (-span/2):(1/nsamp):(span/2);
+    coeff = zeros(1, numel(t1));
+
+    % Расчет коэффициентов приподнятого косинуса
+    for idx = 1:length(t1)
+        time = t1(idx);
+        
+        switch time
+            case {T/(2*rolloff), -T/(2*rolloff)}
+                coeff(idx) = (pi / (4 * T)) * sinc(1 / (2 * rolloff));
+            otherwise
+                coeff(idx) = (1 / T) * sinc(time / T) * (cos(pi * rolloff * ...
+                    time / T) / (1 - (2 * rolloff * time / T)^2));
+        end
+    end
+
+    % Нормализация коэффициентов фильтра
+    coeff = coeff / sqrt(sum(coeff.^2));
 end
