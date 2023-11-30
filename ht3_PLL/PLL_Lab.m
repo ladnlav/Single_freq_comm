@@ -87,75 +87,75 @@ IQ_TX_Frame = FrameStruct(TX_IQ_Data, IQ_SOF, Amount_of_Frame);
 % Compare the time of synchronisation
 % -------------------------------------------------------------------------
 %% Damping Factor and  BnTs, Time of synchronisation
-% Kd = 2*pi;          % Phase (not change)
-% K0 = 1;             % not change
-% wp=BnTs/(Xi+1/(4*Xi));
-% %> Proportional coefficient
-% Kp = 2*Xi*wp/K0/Kd;
-% %> Integrator coefficient
-% Ki = wp^2/K0/Kd;
-% BnTs_ar=1.5:0.1:2.1;
-% Xi_ar=0.1:0.1:1;
-% 
-% Xi = 0.55;
-% SNR=100;
-% Freq_Offset=0.1;
-% for j=1:length(BnTs_ar)
-% 
-%     BnTs=BnTs_ar(j);
-%     wp=BnTs/(Xi+1/(4*Xi));
-%     %> Proportional coefficient
-%     Kp = 2*Xi*wp/K0/Kd;
-%     %> Integrator coefficient
-%     Ki = wp^2/K0/Kd;
-% 
-%     % Channel
-%     Channel_IQ = awgn(IQ_TX_Frame, SNR, 'measured');
-%     Channel_IQ = Channel_IQ.*exp(1j*2*(1:size(Channel_IQ,2))*pi*Freq_Offset);
-%     
-%     % Receiver with frequency estimator based on DM and LR
-%     [RX_IQ_DM, DM_estimate, DM_filtered] = DM(Channel_IQ, Kp, Ki);
-% 
-%     figure(3);
-%     plot(DM_filtered(1:25), '-o','LineWidth', 2,'MarkerSize', 2);
-%     xlabel('Frame');
-%     ylabel('Estimated error (True = 0.01)');
-%     title('Varying BnTs 1.5:0.1:2.1');
-%     grid on;
-%     hold on;
-%     
-% end
-% figure(3);
-% legend(num2str(BnTs_ar'),'Location','southeast')
-% 
-% BnTs = 2.1;  
-% for j=1:length(Xi_ar)
-% 
-%     Xi=Xi_ar(j);
-%     wp=BnTs/(Xi+1/(4*Xi));
-%     %> Proportional coefficient
-%     Kp = 2*Xi*wp/K0/Kd;
-%     %> Integrator coefficient
-%     Ki = wp^2/K0/Kd;
-% 
-%     % Channel
-%     Channel_IQ = awgn(IQ_TX_Frame, SNR, 'measured');
-%     Channel_IQ = Channel_IQ.*exp(1j*2*(1:size(Channel_IQ,2))*pi*Freq_Offset);
-%     
-%     % Receiver with frequency estimator based on DM and LR
-%     [RX_IQ_DM, DM_estimate, DM_filtered] = DM(Channel_IQ, Kp, Ki);
-% 
-%     figure(4);
-%     plot(DM_filtered(1:50), '-o','LineWidth', 2,'MarkerSize', 2);
-%     xlabel('Frame');
-%     ylabel('Estimated error (True = 0.01)');
-%     title('Varying Xi 0.1:0.1:1');
-%     grid on;
-%     hold on;
-%     
-% end
-% figure(4);
-% legend(num2str(Xi_ar'),'Location','southeast')
+Kd = 2*pi;          % Phase (not change)
+K0 = 1;             % not change
+wp=BnTs/(Xi+1/(4*Xi));
+%> Proportional coefficient
+Kp = 2*Xi*wp/K0/Kd;
+%> Integrator coefficient
+Ki = wp^2/K0/Kd;
+BnTs_ar=1.5:0.1:2.1;
+Xi_ar=0.1:0.1:1;
+
+Xi = 0.55;
+SNR=100;
+Freq_Offset=0.1;
+for j=1:length(BnTs_ar)
+
+    BnTs=BnTs_ar(j);
+    wp=BnTs/(Xi+1/(4*Xi));
+    %> Proportional coefficient
+    Kp = 2*Xi*wp/K0/Kd;
+    %> Integrator coefficient
+    Ki = wp^2/K0/Kd;
+
+    % Channel
+    Channel_IQ = awgn(IQ_TX_Frame, SNR, 'measured');
+    Channel_IQ = Channel_IQ.*exp(1j*2*(1:size(Channel_IQ,2))*pi*Freq_Offset);
+    
+    % Receiver with frequency estimator based on DM and LR
+    [RX_IQ_DM, DM_estimate, DM_filtered] = DM(Channel_IQ, Kp, Ki);
+
+    figure(3);
+    plot(DM_filtered(1:25), '-o','LineWidth', 2,'MarkerSize', 2);
+    xlabel('Frame');
+    ylabel('Estimated error (True = 0.01)');
+    title('Varying BnTs 1.5:0.1:2.1');
+    grid on;
+    hold on;
+    
+end
+figure(3);
+legend(num2str(BnTs_ar'),'Location','southeast')
+
+BnTs = 2.1;  
+for j=1:length(Xi_ar)
+
+    Xi=Xi_ar(j);
+    wp=BnTs/(Xi+1/(4*Xi));
+    %> Proportional coefficient
+    Kp = 2*Xi*wp/K0/Kd;
+    %> Integrator coefficient
+    Ki = wp^2/K0/Kd;
+
+    % Channel
+    Channel_IQ = awgn(IQ_TX_Frame, SNR, 'measured');
+    Channel_IQ = Channel_IQ.*exp(1j*2*(1:size(Channel_IQ,2))*pi*Freq_Offset);
+    
+    % Receiver with frequency estimator based on DM and LR
+    [RX_IQ_DM, DM_estimate, DM_filtered] = DM(Channel_IQ, Kp, Ki);
+
+    figure(4);
+    plot(DM_filtered(1:50), '-o','LineWidth', 2,'MarkerSize', 2);
+    xlabel('Frame');
+    ylabel('Estimated error (True = 0.01)');
+    title('Varying Xi 0.1:0.1:1');
+    grid on;
+    hold on;
+    
+end
+figure(4);
+legend(num2str(Xi_ar'),'Location','southeast')
 
 SNR=100;
 Freq_Offset = 0.02;
