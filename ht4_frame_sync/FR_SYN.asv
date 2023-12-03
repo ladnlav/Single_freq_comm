@@ -38,40 +38,38 @@ Tx_Bits = randi([0 1], 1, Amount_of_Frame*Length_Data_IQ); % генерация 
 % |L_H Header| L_D=10*L_H Data|
 IQ_TX_Frame = FrameStruct(Tx_Bits, Header, Amount_of_Frame);
 
-SNR = -10:0.1:5;
-prob_det=zeros(size(SNR));
+SNR = -10:0.1:5; % 30 dB 2.5
 Freq_Offset=0.1;
 
-parfor i=1:length(SNR)
+for i=1:length(SNR)
     snr=SNR(i);
-    
-    prob_det_m=zeros(size(1:10));
-    for j=1:10
-        % Channel
-        Channel_IQ = awgn(IQ_TX_Frame, snr, 'measured');
-        %Channel_IQ = Channel_IQ.*exp(1j*2*(1:size(Channel_IQ,2))*pi*Freq_Offset);
-        
-        cross_corr=corr(Header,Channel_IQ);
-        
-        % находим пики корреляционной функции
-        [~, Indexes_of_frames] = findpeaks(cross_corr, 'SortStr', 'descend', 'NPeaks', length(True_Indexes  ));
-        Indexes_of_frames = sort(Indexes_of_frames);
-        
-        num_true=sum(Indexes_of_frames==True_Indexes);
-    
-        prob_det_m(j)=num_true/length(True_Indexes);
 
-    end
-    prob_det(i)=mean(prob_det_m);
+    % Channel
+    Channel_IQ = awgn(IQ_TX_Frame, snr, 'measured');
+    %Channel_IQ = Channel_IQ.*exp(1j*2*(1:size(Channel_IQ,2))*pi*Freq_Offset);
+    
+    cross_corr=corr(Header,Channel_IQ);
+    
+    % находим пики корреляционной функции
+    [~, Indexes_of_frames] = findpeaks(cross_corr, 'MinPeakDistance', 1396);
+    
+    Start_Of_Frame_Position=Indexes_of_frames(1);
+    
+    % Определяем количество кадров данных
+    Number_of_frame = length(Indexes_of_frames);
+    
+    num_true=sum(Indexes_of_frames==True_Indexes);
+
+    prob_det=
+%     % Строим график корреляции и сохраняем его в файл
+%     figure
+%     plot(cross_corr)
+%     title('Корреляционный анализ битовой последовательности')
+%     xlabel('Номер бита')
+%     ylabel('Корреляция')
+
+    
 end
-
-figure(3);
-plot(SNR,prob_det, '-o','LineWidth', 2,'MarkerSize', 2);
-xlabel('SNR (dB)');
-ylabel('Probability of detection');
-title('Probability of detection vs SNR');
-grid on;
-hold on;
 
 
 %% Functions
