@@ -44,22 +44,95 @@ IQ_TX_Frame = IQ_TX_Frame(L_D-30:end); % dropping first frame, but saving
 
 True_Indexes=31:L_D:L_D*(Amount_of_Frame-1); % setting true starts of the frames
 
-SNR = -10:1:25;
-prob_det=zeros(size(SNR));
-Freq_Offset=0.1;
+SNR = -15:1:5;
+Freq_Offset=-0.2:0.05:0.2;
+prob_def_corr=zeros(length(SNR),length(Freq_Offset));
+prob_def_diff_corr=zeros(length(SNR),length(Freq_Offset));
+
 Rx_amount_frames=floor(length(IQ_TX_Frame)/L_D);
 
 parfor i=1:length(SNR)
     snr=SNR(i);
+   
+    % Create temporary variables
+    prob_def_corr_temp = zeros(length(Freq_Offset), 1);
+    prob_det_diff_corr_temp = zeros(length(Freq_Offset), 1);
+
+    for j=1:length(Freq_Offset)
+        freq_off=Freq_Offset(j);
+
+        % Channel
+        Channel_IQ = awgn(IQ_TX_Frame, snr, 'measured');
+        Channel_IQ = Channel_IQ.*exp(1j*2*(1:size(Channel_IQ,2))*pi*freq_off);
+        
+        cross_corr = corr(Header_IQ,Channel_IQ);
+        diff_corr  = corr_diff_coeff(Header_IQ,Channel_IQ);
+    
+        % finding possible starts of the frames
+        Indexes_of_frames_corr=potential_frames(Rx_amount_frames,cross_corr,L_D);
+        Indexes_of_frames_diff_corr=potential_frames(Rx_amount_frames,diff_corr,L_D);
+    
+        % calculating probability of right detection
+        num_true_corr=sum(Indexes_of_frames_corr==True_Indexes);
+        prob_def_corr_temp(j) = num_true_corr / length(True_Indexes);
+        
+        num_true_diff_corr=sum(Indexes_of_frames_diff_corr==True_Indexes);
+        prob_det_diff_corr_temp(j) = num_true_diff_corr / length(True_Indexes);
+    end
+    prob_def_corr(i, :) = prob_def_corr_temp;
+    prob_def_diff_corr(i, :) = prob_det_diff_corr_temp;
+end
+
+for j=1:length(Freq_Offset) 
+    figure(3);
+%     plot(SNR,prob_def_corr(:,j), '-o','LineWidth', 2, 'Color', 'red', 'MarkerSize', 2, ...
+%         'DisplayName', ['Cross corr: Freq_offset=', num2str(Freq_Offset(j))]);
+    hold on;
+    plot(SNR,prob_def_diff_corr(:,j), '-o','LineWidth', 2, ...
+       'MarkerSize', 2,'DisplayName', ['Diff corr: Freq_offset=', num2str(Freq_Offset(j))]);
+    xlabel('SNR (dB)');
+    ylabel('Probability of detection');
+    title('Probability of detection vs SNR with Freq Offset');
+    grid on;
+    legend('Location','southeast')
+end
+
+%% Functions
+
+function diff_cor=corr_diff_coeff(header, signal)
+    
+    diff_cor(1:length(signal)-length(header))=0;
+
+    for n=1:length(signal)-length(header)
+
+        sum_num=0;
+        sum1=0;
+        sum2=0;
+        for k=1:length(header)-1
+            %step0: find diff coeffs for header and signal
+            c_y=calc_diff(n+k,signal);
+            c_x=calc_diff(k,header);
+
+            % step1: find numerator for n
+            sum_num=sum_num+c_y*conj(c_x);
+    
+            %step2: find denumerator for n
+            sum1=sum1+abs(c_y)^2;
+            sum2=sum2+abs(c_x)^2;
+        end
+        diff_cor(n)=sum_num/sqrt(sum1*sum2);
+    end
+
+     diff_cor=diff_cor/max(diff_cor);
+end
+
+function diff_coeff=calc_diff(index,signal)
+    diff_coeff=signal(index)*conj(signal(index+1));
+end
+
+function Indexes_of_frames=potential_frames(Rx_amount_frames, cross_corr, L_D)
     Indexes_of_frames = zeros([1,Rx_amount_frames]);
 
-    % Channel
-    Channel_IQ = awgn(IQ_TX_Frame, snr, 'measured');
-    %Channel_IQ = Channel_IQ.*exp(1j*2*(1:size(Channel_IQ,2))*pi*Freq_Offset);
-    
-    cross_corr=corr(Header_IQ,Channel_IQ);
-    
-    % finding possible starts of the frames
     for k=1:Rx_amount_frames
 
         if k==Rx_amount_frames
@@ -67,32 +140,17 @@ parfor i=1:length(SNR)
             Indexes_of_frames(k)=(k-1)*L_D+index_i;
             continue;
         end
-
+    
         [~, index_i] = max(cross_corr(1+(k-1)*L_D:k*L_D));
         Indexes_of_frames(k)=(k-1)*L_D+index_i;
     end
 
-    % calculating probability of right detection
-    num_true=sum(Indexes_of_frames==True_Indexes);
-    prob_det(i)=num_true/length(True_Indexes);
-
 end
-
-figure(3);
-plot(SNR,prob_det, '-o','LineWidth', 2,'MarkerSize', 2);
-xlabel('SNR (dB)');
-ylabel('Probability of detection');
-title('Probability of detection vs SNR');
-grid on;
-hold on;
-
-
-%% Functions
 
 function res_cor = corr(header, signal)
     res_cor(1 : length(signal)-length(header)) = 0;
     for itter = 1 : length(signal)-length(header)
-        res_cor(itter) = sum(header.*signal(itter + 1:itter+length(header) ))/length(header);
+        res_cor(itter) = sum(header.*signal(itter + 1:itter+length(header)))/length(header);
     end
 
     res_cor=res_cor/max(res_cor);
