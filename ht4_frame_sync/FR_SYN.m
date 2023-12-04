@@ -9,12 +9,12 @@ sequence = Scrambler(Register); % генерация последователь�
 %Функция циклической автокорреляции
 acf = cyclic_autocorr(sequence);
 
-figure;
-plot(acf, 'LineWidth', 1.5);
-title('Autocorrelation Function of Scrambler Output');
-xlabel('Bit Offset');
-ylabel('Autocorrelation');
-saveas(gcf, 'ACF_Srambler.fig');
+% figure;
+% plot(acf, 'LineWidth', 1.5);
+% title('Autocorrelation Function of Scrambler Output');
+% xlabel('Bit Offset');
+% ylabel('Autocorrelation');
+% saveas(gcf, 'ACF_Srambler.fig');
 
 [~, max_index] = max(acf(2:end)); % поиск максимального значения автокорреляции
 PN_Period = max_index; % вывод периода повторения
@@ -25,44 +25,57 @@ disp(PN_Period);
 
 %% Task 2: Signal generation + Probability of detection
 Header=sequence;
-Amount_of_Frame = 1001;
-L_H=length(Header);
-Length_Data_IQ = 10*length(Header);
-L_D=L_H+Length_Data_IQ;
+Amount_of_Frame = 1001; % one frame for drop
+L_H=length(Header);    % length of header
+Length_Data_IQ = 10*length(Header); % length of data
+L_D=L_H+Length_Data_IQ;         %frame length
 
-True_Indexes=L_D:L_D:L_D*(Amount_of_Frame-1);
+
 
 Tx_Bits = randi([0 1], 1, Amount_of_Frame*Length_Data_IQ); % генерация бит; 
 
+TX_IQ_Data = mapping(Tx_Bits, 'BPSK');
+Header_IQ = mapping (Header,'BPSK');
 % Frame structure 
 % |L_H Header| L_D=10*L_H Data|
-IQ_TX_Frame = FrameStruct(Tx_Bits, Header, Amount_of_Frame);
+IQ_TX_Frame = FrameStruct(TX_IQ_Data, Header_IQ, Amount_of_Frame);
+IQ_TX_Frame = IQ_TX_Frame(L_D-30:end); % dropping first frame, but saving
+                                        %  first 30 symbols for some offset
 
-SNR = -10:0.1:5;
+True_Indexes=31:L_D:L_D*(Amount_of_Frame-1); % setting true starts of the frames
+
+SNR = -10:1:25;
 prob_det=zeros(size(SNR));
 Freq_Offset=0.1;
+Rx_amount_frames=floor(length(IQ_TX_Frame)/L_D);
 
 parfor i=1:length(SNR)
     snr=SNR(i);
-    
-    prob_det_m=zeros(size(1:10));
-    for j=1:10
-        % Channel
-        Channel_IQ = awgn(IQ_TX_Frame, snr, 'measured');
-        %Channel_IQ = Channel_IQ.*exp(1j*2*(1:size(Channel_IQ,2))*pi*Freq_Offset);
-        
-        cross_corr=corr(Header,Channel_IQ);
-        
-        % находим пики корреляционной функции
-        [~, Indexes_of_frames] = findpeaks(cross_corr, 'SortStr', 'descend', 'NPeaks', length(True_Indexes  ));
-        Indexes_of_frames = sort(Indexes_of_frames);
-        
-        num_true=sum(Indexes_of_frames==True_Indexes);
-    
-        prob_det_m(j)=num_true/length(True_Indexes);
+    Indexes_of_frames = zeros([1,Rx_amount_frames]);
 
+    % Channel
+    Channel_IQ = awgn(IQ_TX_Frame, snr, 'measured');
+    %Channel_IQ = Channel_IQ.*exp(1j*2*(1:size(Channel_IQ,2))*pi*Freq_Offset);
+    
+    cross_corr=corr(Header_IQ,Channel_IQ);
+    
+    % finding possible starts of the frames
+    for k=1:Rx_amount_frames
+
+        if k==Rx_amount_frames
+            [~, index_i] = max(cross_corr(1+(k-1)*L_D:end));
+            Indexes_of_frames(k)=(k-1)*L_D+index_i;
+            continue;
+        end
+
+        [~, index_i] = max(cross_corr(1+(k-1)*L_D:k*L_D));
+        Indexes_of_frames(k)=(k-1)*L_D+index_i;
     end
-    prob_det(i)=mean(prob_det_m);
+
+    % calculating probability of right detection
+    num_true=sum(Indexes_of_frames==True_Indexes);
+    prob_det(i)=num_true/length(True_Indexes);
+
 end
 
 figure(3);
