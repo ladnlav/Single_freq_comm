@@ -9,17 +9,18 @@ sequence = Scrambler(Register); % генерация последователь�
 %Функция циклической автокорреляции
 acf = cyclic_autocorr(sequence);
 
-% figure;
-% plot(acf, 'LineWidth', 1.5);
-% title('Autocorrelation Function of Scrambler Output');
-% xlabel('Bit Offset');
-% ylabel('Autocorrelation');
-% saveas(gcf, 'ACF_Srambler.fig');
+figure;
+plot(acf, 'LineWidth', 1.5);
+title('Cyclic Autocorrelation Function of Scrambler Output');
+xlabel('Bit Offset');
+ylabel('Autocorrelation');
 
 [~, max_index] = max(acf(2:end)); % поиск максимального значения автокорреляции
 PN_Period = max_index; % вывод периода повторения
+disp('Период m-последовательности:')
 disp(PN_Period);
-
+disp('Количество единичек в m-seq:')
+disp(sum(sequence))
 % figure;
 % plot(sequence);
 
