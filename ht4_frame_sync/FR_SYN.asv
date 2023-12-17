@@ -26,17 +26,32 @@ disp(sum(sequence))
 
 %% Task 2: Signal generation + Probability of detection
 Header=sequence;
-Amount_of_Frame = 1001; % one frame for drop
-L_H=length(Header);    % length of header
-Length_Data_IQ = 10*length(Header); % length of data
+Amount_of_Frame = 11; % one frame for drop
+
+const_header = 'BPSK';
+const_data = 'BPSK';
+[TX_IQ_Data,~, const_data_M] = mapping(Tx_Bits, const_data);
+[Header_IQ,~, const_header_M]  = mapping (Header,const_header);
+
+
+L_H=length(Header_IQ);    % length of header
+if (const_header ==  const_data
+    Length_Data_IQ = 10*length(Header); % length of data
+else
+    Length_Data_IQ = 10*length(Header);
+end
 L_D=L_H+Length_Data_IQ;         %frame length
 
 
 
 Tx_Bits = randi([0 1], 1, Amount_of_Frame*Length_Data_IQ); % генерация бит; 
 
-TX_IQ_Data = mapping(Tx_Bits, 'BPSK');
-Header_IQ = mapping (Header,'BPSK');
+
+
+% L_H=length(Header_IQ);    % length of header
+% Length_Data_IQ = 10*length(Header_IQ); % length of data
+% L_D=L_H+Length_Data_IQ;         %frame length
+
 % Frame structure 
 % |L_H Header| L_D=10*L_H Data|
 IQ_TX_Frame = FrameStruct(TX_IQ_Data, Header_IQ, Amount_of_Frame);
@@ -52,7 +67,7 @@ prob_def_diff_corr=zeros(length(SNR),length(Freq_Offset));
 
 Rx_amount_frames=floor(length(IQ_TX_Frame)/L_D);
 
-parfor i=1:length(SNR)
+for i=1:length(SNR)
     snr=SNR(i);
    
     % Create temporary variables
@@ -88,8 +103,8 @@ end
 
 for j=1:length(Freq_Offset) 
     figure(3);
-%     plot(SNR,prob_def_corr(:,j), '-o','LineWidth', 2, 'Color', 'red', 'MarkerSize', 2, ...
-%         'DisplayName', ['Cross corr: Freq_offset=', num2str(Freq_Offset(j))]);
+    plot(SNR,prob_def_corr(:,j), '-o','LineWidth', 2, 'MarkerSize', 2, ...
+        'DisplayName', ['Cross corr: Freq_offset=', num2str(Freq_Offset(j))]);
     hold on;
 %     plot(SNR,prob_def_diff_corr(:,j), '-o','LineWidth', 2, ...
 %        'MarkerSize', 2,'DisplayName', ['Diff corr: Freq_offset=', num2str(Freq_Offset(j))]);
@@ -153,7 +168,7 @@ end
 function res_cor = corr(header, signal)
     res_cor(1 : length(signal)-length(header)) = 0;
     for itter = 1 : length(signal)-length(header)
-        res_cor(itter) = sum(header.*signal(itter + 1:itter+length(header)))/length(header);
+        res_cor(itter) = sum(header.*conj(signal(itter + 1:itter+length(header))))/length(header);
     end
 
     res_cor=res_cor/max(res_cor);
@@ -168,7 +183,7 @@ function acf = cyclic_autocorr(signal)
     % вычисляем циклическую автокорреляцию
     acf = zeros(1, N);
     for itter = 1:N
-        acf(itter) = sum(signal.*circshift(signal, itter-1))/N;
+        acf(itter) = sum(signal.*circshift(conj(signal), itter-1))/N;
     end
     % нормализация
     acf = acf / acf(1); 

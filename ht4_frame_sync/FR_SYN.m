@@ -5,9 +5,10 @@ clear; clc; close all;
 
 Register = [0 1 0 0 1 1 0]; % начальное состояние регистра
 sequence = Scrambler(Register); % генерация последовательности
+%sequence_mapped = mapping(sequence,'BPSK'); 
 
 %Функция циклической автокорреляции
-acf = cyclic_autocorr(sequence);
+acf = cyclic_autocorr(sequence_mapped);
 
 figure;
 plot(acf, 'LineWidth', 1.5);
@@ -18,7 +19,11 @@ ylabel('Autocorrelation');
 [~, max_index] = max(acf(2:end)); % поиск максимального значения автокорреляции
 PN_Period = max_index; % вывод периода повторения
 disp('Период m-последовательности:')
-disp(PN_Period);
+if PN_Period==1
+    disp(length(sequence_mapped));
+else
+    disp((sequence_mapped));
+end
 disp('Количество единичек в m-seq:')
 disp(sum(sequence))
 % figure;
@@ -27,16 +32,24 @@ disp(sum(sequence))
 %% Task 2: Signal generation + Probability of detection
 Header=sequence;
 Amount_of_Frame = 1001; % one frame for drop
-L_H=length(Header);    % length of header
-Length_Data_IQ = 10*length(Header); % length of data
+
+const_header = 'BPSK';
+const_data = 'QPSK';
+[~,const_data_M]=constellation_func(const_data);
+[~,const_header_M]=constellation_func(const_header);
+
+Header_IQ = mapping (Header,const_header);
+L_H=length(Header_IQ);    % length of header
+Length_Data_IQ = 10*length(Header_IQ);
+
 L_D=L_H+Length_Data_IQ;         %frame length
+Tx_Bits = randi([0 1], 1, Amount_of_Frame*Length_Data_IQ*const_data_M/const_header_M); % bit gen;
+TX_IQ_Data = mapping(Tx_Bits, const_data);
 
+% L_H=length(Header_IQ);    % length of header
+% Length_Data_IQ = 10*length(Header_IQ); % length of data
+% L_D=L_H+Length_Data_IQ;         %frame length
 
-
-Tx_Bits = randi([0 1], 1, Amount_of_Frame*Length_Data_IQ); % генерация бит; 
-
-TX_IQ_Data = mapping(Tx_Bits, 'BPSK');
-Header_IQ = mapping (Header,'BPSK');
 % Frame structure 
 % |L_H Header| L_D=10*L_H Data|
 IQ_TX_Frame = FrameStruct(TX_IQ_Data, Header_IQ, Amount_of_Frame);
@@ -153,7 +166,7 @@ end
 function res_cor = corr(header, signal)
     res_cor(1 : length(signal)-length(header)) = 0;
     for itter = 1 : length(signal)-length(header)
-        res_cor(itter) = sum(header.*signal(itter + 1:itter+length(header)))/length(header);
+        res_cor(itter) = sum(header.*conj(signal(itter + 1:itter+length(header))))/length(header);
     end
 
     res_cor=res_cor/max(res_cor);
@@ -168,7 +181,7 @@ function acf = cyclic_autocorr(signal)
     % вычисляем циклическую автокорреляцию
     acf = zeros(1, N);
     for itter = 1:N
-        acf(itter) = sum(signal.*circshift(signal, itter-1))/N;
+        acf(itter) = sum(signal.*circshift(conj(signal), itter-1))/N;
     end
     % нормализация
     acf = acf / acf(1); 
