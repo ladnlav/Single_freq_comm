@@ -88,8 +88,8 @@ end
 
 for j=1:length(Freq_Offset) 
     figure(3);
-    plot(SNR,prob_def_corr(:,j), '-o','LineWidth', 2, 'MarkerSize', 2, ...
-        'DisplayName', ['Cross corr: Freq_offset=', num2str(Freq_Offset(j))]);
+%     plot(SNR,prob_def_corr(:,j), '-o','LineWidth', 2, 'Color', 'red', 'MarkerSize', 2, ...
+%         'DisplayName', ['Cross corr: Freq_offset=', num2str(Freq_Offset(j))]);
     hold on;
 %     plot(SNR,prob_def_diff_corr(:,j), '-o','LineWidth', 2, ...
 %        'MarkerSize', 2,'DisplayName', ['Diff corr: Freq_offset=', num2str(Freq_Offset(j))]);
