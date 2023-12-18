@@ -49,7 +49,7 @@
     %> @todo построить импульсную и частотную характеристику фильтра
 
     % Импульсная характеристика
-    pulse = conv(sqimpuls, sqimpuls,'same');
+    pulse = (sqimpuls);
     % Частотная характеристика фильтра
     frequency_response = abs(fftshift(fft(pulse)));
     
@@ -61,12 +61,13 @@
     ylabel('Amplitude');
     
     subplot(2,1,2);
-    f = linspace(-0.5, 0.5, length(frequency_response));
-    plot(f, frequency_response);
+    f = linspace(-5, 5, length(frequency_response));
+    plot(f, 10*log10(frequency_response));
     title('Frequency Response');
-    xlabel('Normalized Frequency');
+    xlabel('Frequency');
     ylabel('Magnitude');
-    xlim([-0.5, 0.5]);
+    xlim([-5, 5]);
+    ylim([-60, 10]);
 % =========================================================================
 %> Проверка 1.
 %> Сравнение со стандартной функцией
@@ -102,7 +103,7 @@ end
     %> @todo построить импульсную и частотную характеристику фильтра
 
     % Импульсная характеристика
-    pulse2 = conv(impuls, impuls, 'same');
+    pulse2 = (impuls);
     % Частотная характеристика фильтра
     frequency_response2 = abs(fftshift(fft(pulse2)));
     
@@ -114,13 +115,14 @@ end
     ylabel('Amplitude');
     
     subplot(2,1,2);
-    f = linspace(-0.5, 0.5, length(frequency_response2));
-    plot(f, frequency_response2);
+    f = linspace(-5, 5, length(frequency_response2));
+    plot(f, 10*log10(frequency_response2));
     title('Frequency Response');
-    xlabel('Normalized Frequency');
+    xlabel('Frequency');
     ylabel('Magnitude');
-    xlim([-0.5, 0.5]);
-    
+    xlim([-5, 5]);
+    ylim([-60, 10]);
+
     t1 = (-span/2):(1/nsamp):(span/2);
     figure;
     plot(pulse);
@@ -217,6 +219,9 @@ end
     ylabel('Quadrature (Q)');
     grid on;
     
+%     signal2 = filtsign2(2:nsamp:end);
+%     scatterplot(signal2);
+%     plot(abs(signal2));
     % Амплитуда сигнала от времени
     figure;
     time = (0:length(filtsign2)-1);
@@ -271,7 +276,7 @@ end
     
     %% point 5.2 MER(freq_offset)
     SNR=30; % in dB
-    freqOffsetPercentage = -2:0.01:2;
+    freqOffsetPercentage = -0.5:1/16:0.5;
     MER_values = zeros(size(freqOffsetPercentage));
 
     % Цикл по разным значениям частотного сдвига
@@ -287,16 +292,20 @@ end
         % Согласованная фильтрация на приёмнике
         IQ_filt3 = filtration(RX_IQ_offset, sqimpuls, nsamp, 0);
         
+        % Частотная синхронизация
+        IQ_filt3_sync = IQ_filt3 .* exp(-1i * 2 * pi * frequencyOffset * (0:length(IQ_filt_noise)-1));
+
         % Downsampling на приёмнике
-        IQ_filt3_downsampled=downsample(IQ_filt3, nsamp);
+        IQ_filt3_downsampled=downsample(IQ_filt3_sync, nsamp);
 
         % MER для текущего частотного сдвига 
         MER_values(i) = MER_my_func(IQ_filt3_downsampled, 'QPSK');
+        %scatterplot (IQ_filt3_downsampled);
     end
 
     figure;
-    plot(freqOffsetPercentage, MER_values, 'o-');
+    plot(freqOffsetPercentage, MER_values, '-', 'LineWidth', 2);
     title('MER Characteristic vs. Frequency Offset');
-    xlabel('Frequency Offset (% of Signal Band)');
+    xlabel('Frequency Offset');
     ylabel('MER (dB)');
     grid on;

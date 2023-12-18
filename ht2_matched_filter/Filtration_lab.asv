@@ -1,0 +1,311 @@
+% Фильтрация.
+% =========================================================================
+%> Подготовка рабочего места
+% =========================================================================
+    %> Отчистка workspace
+    clear all;
+    %> Закрытие рисунков
+    close all;
+    %> Отчистка Command Window
+    clc;
+% =========================================================================
+%> Функция sinc. Пример из лекции.
+% =========================================================================
+    %> Генерим массив
+    x = [-10:0.1:10];
+    %> Функция sinc
+    y = sinc(x);
+    % =====================================================================
+    %> График импульсной характеристики
+    % =====================================================================
+    figure 
+    plot(x,y)
+    title('sinc(x)')
+    % =====================================================================
+    %> График спектра
+    % =====================================================================
+    %> Фурье + спектр в дБ
+    spectum = 10*log10(abs(fft(y)));
+    %> Полоса по центру
+    spectum = [spectum(102:201), spectum(1:101)];
+    %> график с учетом T = 2 (см. свойства sinc)
+    figure 
+    plot(x/2, spectum)
+    title('spectum sinc(x)')
+% =========================================================================
+%> Задача 1: Написать функцию, которая генерирует коэффиценты (импульсную 
+%> характеристику)для фильтра корень из приподнятого косинуса.
+%> Построить импульсную и частотную характеристику фильтра.
+% =========================================================================
+    %> Длина фильтра в символах (число боковых лепестков sinc, сумма с двух сторон)
+    span = 20;
+    %> Число выборок на символ
+    nsamp  = 4;
+    %> Коэффицент сглаживания (alfa)
+    rolloff = 0.2;
+    % =====================================================================
+    %> @todo прописать функцию
+    sqimpuls = sqRCcoeff (span, nsamp, rolloff);
+    %> @todo построить импульсную и частотную характеристику фильтра
+
+    % Импульсная характеристика
+    pulse = (sqimpuls);
+    % Частотная характеристика фильтра
+    frequency_response = abs(fftshift(fft(pulse)));
+    
+    figure;
+    subplot(2,1,1);
+    plot(pulse);
+    title('Root Raised Cosine Pulse Response');
+    xlabel('Sample Index');
+    ylabel('Amplitude');
+    
+    subplot(2,1,2);
+    f = linspace(-10, 10, length(frequency_response));
+    plot(x, 10*log10(frequency_response));
+    title('Frequency Response');
+    xlabel('Normalized Frequency');
+    ylabel('Magnitude');
+    xlim([-10, 10]);
+    ylim([-60, 10]);
+% =========================================================================
+%> Проверка 1.
+%> Сравнение со стандартной функцией
+% =========================================================================
+txfilter1 = comm.RaisedCosineTransmitFilter('RolloffFactor', rolloff, ...
+                                           'FilterSpanInSymbols',span,...
+                                           'OutputSamplesPerSymbol', nsamp);
+check1 = coeffs(txfilter1);
+if sum(abs(check1.Numerator-sqimpuls))< 0.001 % Проверка совпадения форм 
+                                              % Импульсных характеристик 
+                                              % с заданной точностью
+    ans = 'Проверка задачи 1 пройдена успешно'
+else 
+    err = 'Ошибка в задаче 1. Проверьте коэффиценты'
+    ans = sum(abs(check1.Numerator-sqimpuls))
+end
+% =========================================================================
+%> Задача 2: Написать функцию, которая генерирует коэффиценты (импульсную 
+%> характеристику) для фильтра приподнятого косинуса.
+%> Построить импульсную и частотную характеристику фильтра.
+    %> Построить импульсную характеристику для корня, без корня и соответсвующий sinc 
+    %> на одном графике
+% =========================================================================
+    %> Длина фильтра в символах (число боковых лепестков sinc, сумма с двух сторон)
+    span = 20;
+    %> Число выборок на символ
+    nsamp  = 4;
+    %> Коэффицент сглаживания (alfa)
+    rolloff = 0.2;
+    % =====================================================================
+    %> @todo прописать функцию
+    impuls = RCcoeff (span, nsamp, rolloff);
+    %> @todo построить импульсную и частотную характеристику фильтра
+
+    % Импульсная характеристика
+    pulse2 = (impuls);
+    % Частотная характеристика фильтра
+    frequency_response2 = abs(fftshift(fft(pulse2)));
+    
+    figure;
+    subplot(2,1,1);
+    plot(pulse2);
+    title('Raised Cosine Pulse Response');
+    xlabel('Sample Index');
+    ylabel('Amplitude');
+    
+    subplot(2,1,2);
+    f = linspace(-0.5, 0.5, length(frequency_response2));
+    plot(f, 10*log10(frequency_response2));
+    title('Frequency Response');
+    xlabel('Normalized Frequency');
+    ylabel('Magnitude');
+    xlim([-0.5, 0.5]);
+    ylim([-60, 10]);
+
+    t1 = (-span/2):(1/nsamp):(span/2);
+    figure;
+    plot(pulse);
+    hold on;
+    plot(pulse2);
+    plot(sinc(t1*(1-rolloff)));
+    title('All pulses in one chart');
+    xlabel('Sample Index');
+    ylabel('Amplitude');
+    legend("Root Raised Cosine", "Raised Cosine", "Sinc",'Location','southwest');
+% =========================================================================
+%> Проверка 2.
+%> Сравнение со стандартной функцией
+% =========================================================================
+txfilter2 = comm.RaisedCosineTransmitFilter('RolloffFactor', rolloff, ...
+                                            'FilterSpanInSymbols',span,...
+                                            'OutputSamplesPerSymbol', nsamp,...
+                                            'Shape', 'Normal');
+check2 = coeffs(txfilter2);
+if sum(abs(check2.Numerator-impuls))< 0.1 % Проверка совпадения форм 
+                                          % Импульсных характеристик 
+                                          % с заданной точностью
+    ans = 'Проверка задачи 2 пройдена успешно'
+else 
+    err = 'Ошибка в задаче 2. Проверьте коэффиценты'
+    ans = sum(abs(check2.Numerator-impuls))
+end
+% =========================================================================
+%> Задание 3. 
+%> Напишите функцию фильтрации, которая работает в двух режимах: с
+%> увеличением колличества выборок на символ и без (повторная фильтрация)
+%> @warning используется функция mapping из прошлых работ
+% =========================================================================
+    UpSempFlag = true(1);
+    bits = randi([0 1], 1, 1000); % генерация бит
+    [sign,~] = mapping (bits, 'QPSK');       %QPSK 500 символов 
+    filtsign = filtration(sign, sqimpuls, nsamp, UpSempFlag);
+    % =====================================================================
+    %> Проверка 3.1
+    %> Проверяем корректность работы ф-ии с передескретизацией со станднартной функцией.
+    % =====================================================================
+    check3 = txfilter1(sign.').';
+    if sum(abs(check3-filtsign))< 0.1 % Проверка совпадения форм 
+                                      % Импульсных характеристик 
+                                      % с заданной точностью
+        ans = 'Проверка задачи 3.1 пройдена успешно'
+    else 
+        err = 'Ошибка в задаче 3.1. Проверьте фильтр'
+        ans = sum(abs(check3-filtsign))
+    end
+
+    % График сигнального созвездия
+    figure;
+    scatter(real(filtsign), imag(filtsign), 'o');
+    title('Сигнальное созвездие с передискретизацией');
+    xlabel('In-Phase (I)');
+    ylabel('Quadrature (Q)');
+    grid on;
+    
+    % Амплитуда сигнала от времени
+    figure;
+    time = (0:length(filtsign)-1);
+    plot(time, abs(filtsign));
+    title('Амплитуда передискретизированного сигнала');
+    xlabel('Время');
+    ylabel('Амплитуда');
+    grid on;
+
+    % =====================================================================
+    %> Проверка 3.2
+    %> Проверяем корректность работы ф-ии без передескретизации со станднартной функцией.
+    % =====================================================================
+    UpSempFlag = false(1);
+    filtsign2 = filtration(filtsign, sqimpuls, nsamp, UpSempFlag);
+    rxfilter = comm.RaisedCosineReceiveFilter('RolloffFactor', rolloff, ...
+                                              'FilterSpanInSymbols',span,...
+                                              'InputSamplesPerSymbol', nsamp,...
+                                              'DecimationFactor', 1);
+    chack4 = rxfilter(filtsign.').';
+    if sum(abs(chack4-filtsign2))< 0.1 % Проверка совпадения форм 
+                                       % Импульсных характеристик 
+                                       % с заданной точностью
+        ans = 'Проверка задачи 3.2 пройдена успешно'
+    else 
+        err = 'Ошибка в задаче 3.2. Проверьте фильтр'
+        ans = sum(abs(chack4-filtsign2))
+    end
+
+     % График сигнального созвездия
+    figure;
+    scatter(real(filtsign2), imag(filtsign2), 'o');
+    title('Сигнальное созвездие без передискретизации');
+    xlabel('In-Phase (I)');
+    ylabel('Quadrature (Q)');
+    grid on;
+    
+%     signal2 = filtsign2(2:nsamp:end);
+%     scatterplot(signal2);
+%     plot(abs(signal2));
+    % Амплитуда сигнала от времени
+    figure;
+    time = (0:length(filtsign2)-1);
+    plot(time, abs(filtsign2));
+    title('Амплитуда сигнала без передискретизации');
+    xlabel('Время');
+    ylabel('Амплитуда');
+    grid on;
+
+
+    %% point 5.1: screenshot model
+    UpSempFlag = true(1);
+    message = bits;
+    [IQ,~] = mapping(message, 'QPSK');       %QPSK 500 символов 
+    IQ_filt = filtration(IQ, sqimpuls, nsamp, UpSempFlag);
+
+    IQ_filt_noise=Noise(5,IQ_filt);
+
+    IQ_filt2 = filtration(IQ_filt_noise, sqimpuls, nsamp, UpSempFlag);
+    
+    IQ_downsampled=downsample(IQ_filt2, nsamp);
+
+    figure;
+    scatter(real(IQ_filt2), imag(IQ_filt2), 'o');
+    title('Сигнальное созвездие на приёмнике после добавления AWGN');
+    xlabel('In-Phase (I)');
+    ylabel('Quadrature (Q)');
+    grid on;
+    
+    figure;
+    time = (0:length(IQ_filt2)-1);
+    plot(time, abs(IQ_filt2));
+    title('Амплитуда сигнала на приёмнике после добавления AWGN');
+    xlabel('Время');
+    ylabel('Амплитуда');
+    grid on;
+
+    figure; 
+    scatter(real(IQ_downsampled), imag(IQ_downsampled), 'o');
+    title('Сигнальное созвездие на приёмнике после передискретизации к исходной частоте дискретизации');
+    xlabel('In-Phase (I)');
+    ylabel('Quadrature (Q)');
+    grid on;
+    
+    figure;
+    time = (0:length(IQ_downsampled)-1);
+    plot(time, abs(IQ_downsampled));
+    title('Амплитуда сигнала на приёмнике после передискретизации к исходной частоте дискретизации');
+    xlabel('Время');
+    ylabel('Амплитуда');
+    grid on;
+    
+    %% point 5.2 MER(freq_offset)
+    SNR=30; % in dB
+    freqOffsetPercentage = -0.5:1/16:0.5;
+    MER_values = zeros(size(freqOffsetPercentage));
+
+    % Цикл по разным значениям частотного сдвига
+    for i = 1:length(freqOffsetPercentage)
+        
+        % Добавить шум с заданным SNR
+        IQ_filt_noise=Noise(SNR,IQ_filt);
+
+        % Добавить частотный сдвиг
+        frequencyOffset = freqOffsetPercentage(i);
+        RX_IQ_offset = IQ_filt_noise .* exp(1i * 2 * pi * frequencyOffset * (0:length(IQ_filt_noise)-1));
+        
+        % Согласованная фильтрация на приёмнике
+        IQ_filt3 = filtration(RX_IQ_offset, sqimpuls, nsamp, 0);
+        
+        % Частотная синхронизация
+        IQ_filt3_sync = IQ_filt3 .* exp(-1i * 2 * pi * frequencyOffset * (0:length(IQ_filt_noise)-1));
+
+        % Downsampling на приёмнике
+        IQ_filt3_downsampled=downsample(IQ_filt3_sync, nsamp);
+
+        % MER для текущего частотного сдвига 
+        MER_values(i) = MER_my_func(IQ_filt3_downsampled, 'QPSK');
+        scatterplot (IQ_filt3_downsampled);
+    end
+
+    figure;
+    plot(freqOffsetPercentage, MER_values, 'o-');
+    title('MER Characteristic vs. Frequency Offset');
+    xlabel('Frequency Offset (% of Signal Band)');
+    ylabel('MER (dB)');
+    grid on;
