@@ -61,12 +61,12 @@
     ylabel('Amplitude');
     
     subplot(2,1,2);
-    f = linspace(-10, 10, length(frequency_response));
-    plot(x, 10*log10(frequency_response));
+    f = linspace(-5, 5, length(frequency_response));
+    plot(f, 10*log10(frequency_response));
     title('Frequency Response');
-    xlabel('Normalized Frequency');
+    xlabel('Frequency');
     ylabel('Magnitude');
-    xlim([-10, 10]);
+    xlim([-5, 5]);
     ylim([-60, 10]);
 % =========================================================================
 %> Проверка 1.
@@ -115,12 +115,12 @@ end
     ylabel('Amplitude');
     
     subplot(2,1,2);
-    f = linspace(-0.5, 0.5, length(frequency_response2));
+    f = linspace(-5, 5, length(frequency_response2));
     plot(f, 10*log10(frequency_response2));
     title('Frequency Response');
-    xlabel('Normalized Frequency');
+    xlabel('Frequency');
     ylabel('Magnitude');
-    xlim([-0.5, 0.5]);
+    xlim([-5, 5]);
     ylim([-60, 10]);
 
     t1 = (-span/2):(1/nsamp):(span/2);
@@ -218,7 +218,17 @@ end
     xlabel('In-Phase (I)');
     ylabel('Quadrature (Q)');
     grid on;
+
+    filtsign2_downsampled=downsample(filtsign2, nsamp);
+    % scatterplot(filtsign2_downsampled);
     
+    figure;
+    scatter(real(filtsign2_downsampled), imag(filtsign2_downsampled), 'o');
+    title('Сигнальное созвездие с передискретизацией сразу после согл. фильтра на Tx');
+    xlabel('In-Phase (I)');
+    ylabel('Quadrature (Q)');
+    grid on;
+
 %     signal2 = filtsign2(2:nsamp:end);
 %     scatterplot(signal2);
 %     plot(abs(signal2));
@@ -276,7 +286,7 @@ end
     
     %% point 5.2 MER(freq_offset)
     SNR=30; % in dB
-    freqOffsetPercentage = -0.5:1/16:0.5;
+    freqOffsetPercentage = 0;
     MER_values = zeros(size(freqOffsetPercentage));
 
     % Цикл по разным значениям частотного сдвига
@@ -304,8 +314,8 @@ end
     end
 
     figure;
-    plot(freqOffsetPercentage, MER_values, 'o-');
+    plot(freqOffsetPercentage, MER_values, '-', 'LineWidth', 2);
     title('MER Characteristic vs. Frequency Offset');
-    xlabel('Frequency Offset (% of Signal Band)');
+    xlabel('Frequency Offset');
     ylabel('MER (dB)');
     grid on;

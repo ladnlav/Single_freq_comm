@@ -218,7 +218,17 @@ end
     xlabel('In-Phase (I)');
     ylabel('Quadrature (Q)');
     grid on;
+
+    filtsign2_downsampled=downsample(filtsign2, nsamp);
+    % scatterplot(filtsign2_downsampled);
     
+    figure;
+    scatter(real(filtsign2_downsampled), imag(filtsign2_downsampled), 'o');
+    title('—игнальное созвездие с передискретизацией сразу после согл. фильтра на Tx');
+    xlabel('In-Phase (I)');
+    ylabel('Quadrature (Q)');
+    grid on;
+
 %     signal2 = filtsign2(2:nsamp:end);
 %     scatterplot(signal2);
 %     plot(abs(signal2));
@@ -276,7 +286,7 @@ end
     
     %% point 5.2 MER(freq_offset)
     SNR=30; % in dB
-    freqOffsetPercentage = -0.5:1/16:0.5;
+    freqOffsetPercentage = 0;
     MER_values = zeros(size(freqOffsetPercentage));
 
     % ÷икл по разным значени€м частотного сдвига
@@ -299,8 +309,8 @@ end
         IQ_filt3_downsampled=downsample(IQ_filt3_sync, nsamp);
 
         % MER дл€ текущего частотного сдвига 
-        MER_values(i) = MER_my_func(IQ_filt3_downsampled, 'QPSK');
-        %scatterplot (IQ_filt3_downsampled);
+        MER_values(i) = MER_my_func(IQ_filt3_downsampled(21:end), 'QPSK');
+        scatterplot (IQ_filt3_downsampled(21:end));
     end
 
     figure;
